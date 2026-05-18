@@ -1,0 +1,191 @@
+Task Name : Build a Bookstore “Browse & Add to Cart” Feature (Bun + GraphQL + React + Postgres)
+Goal
+Create a working end-to-end feature where users can:
+1. See a list of books  - DONE
+2. Search by title/author  - DONE
+3. Filter by genre  - DONE
+4. View book details - DONE
+5. Add books to a cart (front-end only for now) - YET TO DONE
+
+Tech Stack to Use
+Backend runtime/tooling: Bun (package manager, scripts, runtime)
+Backend: TypeScript + Node.js + GraphQL (Yoga/Apollo in your stack)
+Database: PostgreSQL
+Frontend: React + Vite + TypeScript
+Language: TypeScript everywhere
+
+What to Build
+1) Database (PostgreSQL) - DONE
+Create a books table/model with:
+id (UUID, PK)
+title (text)
+author (text)
+genre (text)
+price (numeric)
+stock (integer)
+description (text, nullable)
+publishedYear (int)
+createdAt, updatedAt
+Seed with at least 10 books. - DONE
+---
+2) GraphQL API (Bun + Node.js) - DONE
+Implement these operations:
+Queries
+books(search: String, genre: String): [Book!]! - DONE
+book(id: ID!): Book - DONE
+
+Mutations
+addToCartSessionBook(bookId: ID!, qty: Int!): Boolean
+ If the cart is implemented client-only (no DB model), you may skip this mutation and only implement the book queries.
+Ensure proper error handling for:
+Book not found - DONE
+Invalid qty (e.g., 0 or negative)
+Out of stock
+---
+3) React + Vite UI
+Build one page with:
+Search input
+Genre dropdown
+Book list/grid
+Book detail panel/modal on click
+“Add to Cart” button
+  Simple cart summary (item count + total price)
+---
+Acceptance Criteria
+1. All book data comes from PostgreSQL via GraphQL (no hardcoded lists)
+2. Search + genre filter work together
+3. Out-of-stock books cannot be added to cart
+4. All code in TypeScript with strong typing (any avoided)
+5. Responsive for desktop + mobile
+6. At least one backend test for resolver/query or validation logic
+---
+Definition of Done
+PR created with:
+  - DB migration + seed files
+  - GraphQL schema + resolvers
+  - React page/component files
+  - README.md with run instructions
+Run commands (using Bun):
+bun install
+bun run dev
+bun run test (or equivalent backend/frontend tests)
+bun run build
+
+
+09/05
+1. source code setup - frontend completed
+2. start frontend
+
+10/05
+1. database creation
+2. Graphql - to fetch the books
+
+11/05
+1. Connect Graphql - react to fetch book details
+2. and rest of frontend task
+
+
+
+Pappu@123
+
+nodejs - runtime environment - road
+js files - car
+npm - node package manager - tyre, steering - express, cors, dotenv
+expressjs - framework of nodejs to write backend
+bun - runtime env, package manager - replacement of nodejs and npm
+postgres - database 
+
+Migration File - A migration file creates or changes the database structure/schema.
+Seed file - A seed file inserts initial/sample data into database.
+pool.ts is the file that creates and manages the PostgreSQL database connection.
+
+
+PENDING:
+
+1. Convert "add to cart" scenario from frontend to move backend logic (using mutation)
+2. to handle type
+
+-------------------------------------------------------
+USING CLI
+
+Task Name
+Build a Bookstore “Browse & Add to Cart” CLI (Bun + GraphQL + React + Postgres)
+Goal
+Create a command-line interface that performs the same bookstore operations as the web UI, using the same GraphQL API and PostgreSQL-backed data.
+Tech Stack
+Runtime/Tooling: Bun (package manager, scripts, runtime)
+Backend/API: TypeScript + Node.js + GraphQL (Yoga/Apollo)
+Database: PostgreSQL
+Frontend: React + Vite + TypeScript (existing UI task unchanged)
+Language: TypeScript everywhere
+What to Build (CLI scope)
+1) CLI Package/Entry
+Create a CLI in the same repo (for example: /cli or ./src/cli) using TypeScript and Bun.
+Implement command entrypoints such as:
+bun run cli --help
+bun run cli books list - DONE
+bun run cli books search --query "<text>" --genre "<genre>"- DONE
+bun run cli books get <bookId> - DONE
+bun run cli cart add <bookId> <qty>-DONE
+bun run cli cart remove <bookId> -DONE 
+bun run cli cart show -DONE
+bun run cli cart clear -DONE
+bun run cli cart checkout (if addToCartSessionBook exists)-DONE 
+ If backend cart mutation exists, CLI should call addToCartSessionBook.
+ If not, CLI may keep a local in-session cart file and validate against live book stock before allowing add operations.
+
+2) GraphQL Integration - DONE
+CLI must call existing GraphQL endpoints:
+books(search: String, genre: String): [Book!]!
+book(id: ID!): Book
+addToCartSessionBook(bookId: ID!, qty: Int!): Boolean (or equivalent)
+
+3) Behavior / Error Handling
+Validate qty (> 0) -DONE
+Show clear error when book not found -DONE
+Show error for out-of-stock and insufficient stock -DONE
+Return friendly messages for invalid args / unknown commands -DONE
+Handle network/API failures gracefully -DONE
+
+4) Output - DONE
+Human-readable output (table/list format acceptable):
+  - list/search shows: id, title, author, genre, price, stock
+  - detail shows full description
+  - cart summary shows total items and total price
+Optional: --json flag for machine-readable output
+
+5) Tests
+Add at least one backend test + one CLI test:
+backend: search/filter/stock validation logic
+CLI: command parsing and cart command behavior - check with jaykumar
+---
+Acceptance Criteria
+CLI loads book data from GraphQL API (no hardcoded books)
+search + genre can be combined in CLI
+Cannot add out-of-stock books in cart
+Front-end task behavior remains unchanged
+Full TypeScript typing (any avoided) - yet to done
+Works on terminal with Bun scripts
+---
+Definition of Done
+PR includes:
+  - CLI code and command handlers
+  - GraphQL integration layer for CLI
+  - Command docs in README
+  - Tests
+
+
+-----Definition of Done
+
+The Pull Request must include:
+CLI code and command handlers.
+GraphQL integration layer for the CLI.
+Command documentation in the README.
+Tests.
+Verification steps:
+bun install
+bun run cli --help
+bun run cli books list
+bun run test
+bun run build
+ 
