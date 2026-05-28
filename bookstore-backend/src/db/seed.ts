@@ -1,4 +1,5 @@
-import { pool } from "./pool";
+console.log("Seed file");
+import { prisma } from "./prisma";
 
 const books = [
   {
@@ -9,8 +10,7 @@ const books = [
     stock: 10,
     description: "A practical guide to building good habits.",
     publishedyear: 2018,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/91bYsX41DVL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/91bYsX41DVL.jpg",
   },
   {
     title: "Rich Dad Poor Dad",
@@ -20,8 +20,7 @@ const books = [
     stock: 5,
     description: "Personal finance and investing lessons.",
     publishedyear: 1997,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/81bsw6fnUiL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/81bsw6fnUiL.jpg",
   },
   {
     title: "Harry Potter and the Sorcerer's Stone",
@@ -31,8 +30,7 @@ const books = [
     stock: 3,
     description: "A young wizard begins his magical journey.",
     publishedyear: 1997,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/81YOuOGFCJL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/81YOuOGFCJL.jpg",
   },
   {
     title: "The Alchemist",
@@ -42,8 +40,7 @@ const books = [
     stock: 7,
     description: "A philosophical story about destiny.",
     publishedyear: 1988,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/71aFt4+OTOL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/71aFt4+OTOL.jpg",
   },
   {
     title: "Ikigai",
@@ -53,8 +50,7 @@ const books = [
     stock: 8,
     description: "Japanese secrets for a long and happy life.",
     publishedyear: 2016,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/81l3rZK4lnL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/81l3rZK4lnL.jpg",
   },
   {
     title: "Deep Work",
@@ -64,8 +60,7 @@ const books = [
     stock: 0,
     description: "Rules for focused success in a distracted world.",
     publishedyear: 2016,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/71QKQ9mwV7L.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/71QKQ9mwV7L.jpg",
   },
   {
     title: "Clean Code",
@@ -75,8 +70,7 @@ const books = [
     stock: 6,
     description: "A handbook of agile software craftsmanship.",
     publishedyear: 2008,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/41SH-SvWPxL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/41SH-SvWPxL.jpg",
   },
   {
     title: "The Psychology of Money",
@@ -86,8 +80,7 @@ const books = [
     stock: 10,
     description: "Timeless lessons on wealth and behavior.",
     publishedyear: 2020,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/71g2ednj0JL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/71g2ednj0JL.jpg",
   },
   {
     title: "1984",
@@ -97,8 +90,7 @@ const books = [
     stock: 4,
     description: "A dystopian novel about surveillance and control.",
     publishedyear: 1949,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/71kxa1-0mfL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/71kxa1-0mfL.jpg",
   },
   {
     title: "The Pragmatic Programmer",
@@ -108,46 +100,32 @@ const books = [
     stock: 5,
     description: "Journey to mastery for modern developers.",
     publishedyear: 1999,
-    image:
-      "https://images-na.ssl-images-amazon.com/images/I/518FqJvR9aL.jpg",
+    image: "https://images-na.ssl-images-amazon.com/images/I/518FqJvR9aL.jpg",
   },
 ];
 
 async function seedBooks() {
   try {
     for (const book of books) {
-      await pool.query(
-        `
-        INSERT INTO books (
-          title,
-          author,
-          genre,
-          price,
-          stock,
-          description,
-          publishedyear,
-          image
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `,
-        [
-          book.title,
-          book.author,
-          book.genre,
-          book.price,
-          book.stock,
-          book.description,
-          book.publishedyear,
-          book.image
-        ]
-      );
+      await prisma.books.create({
+        data: {
+          title: book.title,
+          author: book.author,
+          genre: book.genre,
+          price: book.price,
+          stock: book.stock,
+          description: book.description,
+          publishedyear: book.publishedyear,
+          image: book.image,
+        },
+      });
     }
 
-    console.log("10 books inserted successfully");
-    process.exit(0);
+    console.log("Books inserted successfully");
   } catch (error) {
     console.error("Seed failed:", error);
-    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
