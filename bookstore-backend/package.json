@@ -4,22 +4,34 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "bun run src/index.ts",
     "start": "bun src/index.ts",
     "migrate": "bun src/db/migration.ts",
-    "seed": "bun src/db/seed.ts"
+    "seed": "bun src/db/seed.ts",
+    "lint:sanity": "eslint .",
+    "format:check": "prettier --check .",
+    "type-check": "tsc --noEmit",
+    "test": "bun test",
+    "build": "tsc",
+    "sanity": "bun run lint:sanity && bun run format:check&& bun run type-check && bun run test &&bun run build"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/pg": "^8.20.0"
+    "@types/pg": "^8.20.0",
+    "@typescript-eslint/eslint-plugin": "^8.60.0",
+    "@typescript-eslint/parser": "^8.60.0",
+    "eslint": "^10.4.0",
+    "prettier": "^3.8.3",
+    "prisma": "6"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@graphql-tools/schema": "^10.0.33",
+    "@prisma/client": "^6.19.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

@@ -147,7 +147,7 @@ Show error for out-of-stock and insufficient stock -DONE
 Return friendly messages for invalid args / unknown commands -DONE
 Handle network/API failures gracefully -DONE
 
-4) Output - DONE
+4) Output - DONECLI: command parsing and cart command behavior - check
 Human-readable output (table/list format acceptable):
   - list/search shows: id, title, author, genre, price, stock
   - detail shows full description
@@ -157,7 +157,7 @@ Optional: --json flag for machine-readable output
 5) Tests
 Add at least one backend test + one CLI test:
 backend: search/filter/stock validation logic
-CLI: command parsing and cart command behavior - check with jaykumar
+
 ---
 Acceptance Criteria
 CLI loads book data from GraphQL API (no hardcoded books)
@@ -189,3 +189,53 @@ bun run cli books list
 bun run test
 bun run build
  
+
+
+ -----------------------------------------------------------------------------------
+ bun run cli --help
+bun run cli books list 
+bun run cli books search --query "harry" 
+bun run cli books search --genre "fiction"
+bun run cli books get fbbc366c-9c1b-4e66-bd7f-6406d885ebc3
+bun run cli cart add fbbc366c-9c1b-4e66-bd7f-6406d885ebc3 5
+bun run cli cart remove c393753d-4633-4b6f-9e5c-96d283feb480 
+bun run cli cart show 
+bun run cli cart clear
+bun run cli cart checkout
+
+--------------------------------------------------------------------------------
+query {
+  books(genre: "Fiction") {
+    book_id
+  }
+}
+mutation {
+  addToCart(book_id: "57454148-b478-472f-b07f-99c37b4e243d", quantity: 1) {
+    success
+    message
+  }
+}
+query {
+  books(search: "rich") {
+    book_id
+    title
+    
+  }
+}
+mutation{
+  updateCart(cartItemId: "31aa01e7-ecae-4c51-bed5-ca800223d315",quantity: 3){
+    success
+    message
+  }
+}
+mutation{
+  deleteCartItem(cartItemId: "31aa01e7-ecae-4c51-bed5-ca800223d315"){
+    success
+    message
+  }
+}
+query{
+  book(id:"fbbc366c-9c1b-4e66-bd7f-6406d885ebc3"){
+    title
+  }
+}

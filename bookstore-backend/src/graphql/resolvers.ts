@@ -1,8 +1,8 @@
-// import { fetchBooks } from "../services/book.service";
-import { pool } from "../db/pool";
+import { prisma } from "../db/prisma";
 
 export const resolvers = {
   Query: {
+    // GET ALL BOOKS
     books: async (
       _: unknown,
       args: {
@@ -12,104 +12,74 @@ export const resolvers = {
     ) => {
       const { search, genre } = args;
 
-      let query = `
-        SELECT * FROM books
-        WHERE 1=1
-      `;
+      const books = await prisma.books.findMany({
+        where: {
+          AND: [
+            search
+              ? {
+                  OR: [
+                    {
+                      title: {
+                        contains: search,
+                        mode: "insensitive",
+                      },
+                    },
+                    {
+                      author: {
+                        contains: search,
+                        mode: "insensitive",
+                      },
+                    },
+                  ],
+                }
+              : {},
 
-      const values: string[] = [];
+            genre
+              ? {
+                  genre: {
+                    equals: genre,
+                    mode: "insensitive",
+                  },
+                }
+              : {},
+          ],
+        },
 
-      // Search by title or author
-      if (search) {
-        values.push(`%${search}%`);
+        orderBy: {
+          createdat: "desc",
+        },
+      });
 
-        query += `
-          AND (
-            title ILIKE $${values.length}
-            OR author ILIKE $${values.length}
-          )
-        `;
-      }
-
-      // Filter by genre
-      if (genre) {
-        values.push(genre);
-
-        query += `
-          AND genre ILIKE $${values.length}
-        `;
-      }
-
-      query += `
-        ORDER BY createdat DESC
-      `;
-
-      const result = await pool.query(query, values);
-
-      if (result.rows.length === 0) {
-        return [];
-      }
-
-      return result.rows;
+      return books;
     },
+
+    // GET SINGLE BOOK
     book: async (
       _: unknown,
       args: {
         id: string;
       },
     ) => {
-      const result = await pool.query(
-        `
-      SELECT *
-      FROM books
-      WHERE book_id = $1
-      `,
-        [args.id],
-      );
-
-      return result.rows[0] || null;
-    },
-    cartItems: async () => {
-      const result = await pool.query(`
-    SELECT
-      cart_items.id AS cart_item_id,
-      cart_items.quantity,
-
-      books.book_id AS book_id,
-      books.title,
-      books.author,
-      books.genre,
-      books.price,
-      books.stock,
-      books.image,
-      books.description,
-      books.publishedyear,
-      books.createdat,
-      books.updatedat
-
-    FROM cart_items
-
-    INNER JOIN books
-    ON cart_items.book_id = books.book_id
-  `);
-
-      return result.rows.map((row) => ({
-        id: row.cart_item_id,
-        quantity: row.quantity,
-
-        book: {
-          book_id: row.book_id,
-          title: row.title,
-          author: row.author,
-          genre: row.genre,
-          price: row.price,
-          stock: row.stock,
-          image: row.image,
-          description: row.description,
-          publishedyear: row.publishedyear,
-          createdat: row.createdat,
-          updatedat: row.updatedat,
+      return await prisma.books.findUnique({
+        where: {
+          book_id: args.id,
         },
+      });
+    },
+
+    // GET CART ITEMS
+    cartItems: async () => {
+      const cartItems = await prisma.cart_items.findMany({
+        include: {
+          books: true,
+        },
+      });
+
+      return cartItems.map((item) => ({
+        id: item.id,
+        quantity: item.quantity,
+
+        book: item.books,
       }));
     },
   },
@@ -123,7 +93,6 @@ export const resolvers = {
         quantity: number;
       },
     ) => {
-      console.log("Mutation called:", args);
       const { book_id, quantity } = args;
 
       // Invalid quantity
@@ -131,15 +100,12 @@ export const resolvers = {
         throw new Error("Invalid quantity");
       }
 
-      const result = await pool.query(
-        `
-        SELECT * FROM books
-        WHERE book_id = $1
-        `,
-        [book_id],
-      );
-
-      const book = result.rows[0];
+      // Find book
+      const book = await prisma.books.findUnique({
+        where: {
+          book_id,
+        },
+      });
 
       // Book not found
       if (!book) {
@@ -157,52 +123,45 @@ export const resolvers = {
       }
 
       // Check existing cart item
-      const existingCart = await pool.query(
-        `
-          SELECT * FROM cart_items
-          WHERE book_id = $1
-          `,
-        [book_id],
-      );
+      const existingCart = await prisma.cart_items.findUnique({
+        where: {
+          book_id,
+        },
+      });
 
-      // Update quantity if exists
-      if (existingCart.rows.length > 0) {
-        const existing = existingCart.rows[0];
-
-        const newQuantity = existing.quantity + quantity;
+      // Update existing cart
+      if (existingCart) {
+        const newQuantity = existingCart.quantity + quantity;
 
         if (newQuantity > book.stock) {
           throw new Error("Quantity exceeds stock");
         }
 
-        await pool.query(
-          `
-          UPDATE cart_items
-          SET quantity = $1
-          WHERE id = $2
-          `,
-          [newQuantity, existing.id],
-        );
+        await prisma.cart_items.update({
+          where: {
+            id: existingCart.id,
+          },
+
+          data: {
+            quantity: newQuantity,
+          },
+        });
       } else {
-        // Insert new cart item
-        await pool.query(
-          `
-          INSERT INTO cart_items (
+        // Create new cart item
+        await prisma.cart_items.create({
+          data: {
             book_id,
-            quantity
-          )
-          VALUES ($1, $2)
-          `,
-          [book_id, quantity],
-        );
+            quantity,
+          },
+        });
       }
 
-      // Frontend-only cart
       return {
         success: true,
         message: "Book added to cart successfully",
       };
     },
+
     // UPDATE CART
     updateCart: async (
       _: unknown,
@@ -213,57 +172,48 @@ export const resolvers = {
     ) => {
       const { cartItemId, quantity } = args;
 
-      // Invalid quantity
       if (quantity <= 0) {
         throw new Error("Invalid quantity");
       }
 
-      const cartResult = await pool.query(
-        `
-          SELECT
-            cart_items.*,
-            books.stock
+      const cartItem = await prisma.cart_items.findUnique({
+        where: {
+          id: cartItemId,
+        },
 
-          FROM cart_items
-
-          INNER JOIN books
-          ON cart_items.book_id = books.book_id
-
-          WHERE cart_items.id = $1
-          `,
-        [cartItemId],
-      );
-
-      const cartItem = cartResult.rows[0];
+        include: {
+          books: true,
+        },
+      });
 
       if (!cartItem) {
         throw new Error("Cart item not found");
       }
 
-      // Out of stock
-      if (cartItem.stock === 0) {
+      if (cartItem.books.stock === 0) {
         throw new Error("Out of stock");
       }
 
-      // Quantity exceeds stock
-      if (quantity > cartItem.stock) {
+      if (quantity > cartItem.books.stock) {
         throw new Error("Quantity exceeds stock");
       }
 
-      await pool.query(
-        `
-        UPDATE cart_items
-        SET quantity = $1
-        WHERE id = $2
-        `,
-        [quantity, cartItemId],
-      );
+      await prisma.cart_items.update({
+        where: {
+          id: cartItemId,
+        },
+
+        data: {
+          quantity,
+        },
+      });
 
       return {
         success: true,
         message: "Cart updated successfully",
       };
     },
+
     // DELETE CART ITEM
     deleteCartItem: async (
       _: unknown,
@@ -271,40 +221,41 @@ export const resolvers = {
         cartItemId: string;
       },
     ) => {
-      const { cartItemId } = args;
+      const cartItem = await prisma.cart_items.findUnique({
+        where: {
+          id: args.cartItemId,
+        },
+      });
 
-      const result = await pool.query(
-        `
-          DELETE FROM cart_items
-          WHERE id = $1
-          RETURNING *
-          `,
-        [cartItemId],
-      );
-
-      if (result.rows.length === 0) {
+      if (!cartItem) {
         throw new Error("Cart item not found");
       }
+
+      await prisma.cart_items.delete({
+        where: {
+          id: args.cartItemId,
+        },
+      });
 
       return {
         success: true,
         message: "Cart item removed",
       };
     },
+
+    // CLEAR CART
     clearCart: async () => {
-      await pool.query(`
-    DELETE FROM cart_items
-  `);
+      await prisma.cart_items.deleteMany();
 
       return {
         success: true,
         message: "Cart cleared",
       };
     },
+
+    // CHECKOUT
     checkoutCart: async () => {
-      await pool.query(`
-    DELETE FROM cart_items
-  `);
+      await prisma.cart_items.deleteMany();
 
       return {
         success: true,
