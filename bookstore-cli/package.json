@@ -5,6 +5,6 @@
     "graphql-request": "^7.4.0"
   },
   "scripts": {
-    "cli": "bun run bookstore-cli/index.ts"
+    "cli": "bun run index.ts"
   }
 }
